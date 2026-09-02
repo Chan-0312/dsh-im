@@ -185,13 +185,13 @@ test('group and direct messages use only their own fields and guidance', () => {
   assert.doesNotMatch(direct, /GROUP-ONLY-TOKEN|channel/);
 });
 
-test('all 128 source-field subsets are projected in canonical order with no hidden fields', () => {
+test('all 256 source-field subsets are projected in canonical order with no hidden fields', () => {
   const expected = {
     channel: 'telegram', conversationType: 'group',
     senderId: '123', senderName: '张三', conversationTitle: '测试群',
     chatId: 'chat-123', threadId: 'thread-9', botId: 'bot_one',
   };
-  for (let mask = 0; mask < 128; mask += 1) {
+  for (let mask = 0; mask < 256; mask += 1) {
     const fields = CONTEXT_ENHANCEMENT_FIELDS.filter((_field, index) => mask & (1 << index));
     const selected = snapshot(config({ fields: [...fields].reverse() }));
     const actual = enhanceContextContent('  original\n', selected, () => ({
