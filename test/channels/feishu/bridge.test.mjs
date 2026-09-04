@@ -7461,6 +7461,59 @@ test('groupTopicReply disabled keeps the pre-feature flat reply behavior', async
   assert.equal(topics.size, 0);
 });
 
+test('groupTopicReply opens no topic for a group question denied by the access policy', async () => {
+  const topics = new Map();
+  const replies = [];
+  const creates = [];
+  const seen = new Set();
+  const client = {
+    im: { v1: { message: {
+      reply: async (request) => {
+        replies.push(request);
+        return {
+          code: 0,
+          data: {
+            message_id: `om-reply-${replies.length}`,
+            ...(request.data.reply_in_thread === true ? { thread_id: 'omt-auto-1' } : {}),
+          },
+        };
+      },
+      create: async (request) => {
+        creates.push(request);
+        return { code: 0, data: { message_id: 'om-create-1' } };
+      },
+    } } },
+  };
+  const bridge = new FeishuHarnessBridge({
+    client,
+    channel: {},
+    harness: { ensureRunning: async () => true },
+    state: {
+      hasSeen: (id) => seen.has(id),
+      markSeen: async (id) => seen.add(id),
+      sessionFor: () => null,
+      setSession: async () => true,
+      clearSession: async () => {},
+      topicRootFor: (threadId) => topics.get(threadId) ?? null,
+      setTopic: async (threadId, root) => topics.set(threadId, root),
+    },
+    status: bridgeStatus(),
+    // An empty group allowlist denies every ordinary group sender.
+    accessPolicy: directAccessPolicy({ users: [], privilegedIds: [] }),
+    allowedSenderOpenIds: new Set(['ou_user']),
+    botOpenId: 'ou_bot',
+    groupTopicReply: true,
+    logger: { info() {}, warn() {}, error() {} },
+  });
+
+  await bridge.accept(groupHelpEvent('om-help-denied'));
+  await bridge.waitForIdle();
+
+  assert.equal(replies.length, 0, 'a denied group question must not open a topic');
+  assert.equal(creates.length, 0, 'a denied group question must not be answered at all');
+  assert.equal(topics.size, 0, 'a denied group question must not register a managed topic');
+});
+
 function topicTurnFixture() {
   const sessions = new Map();
   const topics = new Map();
