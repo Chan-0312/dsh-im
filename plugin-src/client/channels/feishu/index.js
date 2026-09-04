@@ -555,7 +555,7 @@ function GroupTopicReplyEditor({ value = false, disabled = false, onSave }) {
     try {
       await onSave?.(next);
     } catch (cause) {
-      setError(cause?.message ?? "群聊话题回复设置保存失败，请重试。");
+      setError(cause?.message ?? "群聊以话题方式回复设置保存失败，请重试。");
     } finally {
       setSaving(false);
     }
